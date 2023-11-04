@@ -1,0 +1,8 @@
+# Pliki .pyc
+*.pyc
+
+# Katalogi __pycache__
+__pycache__/
+
+# Katalogi .pyc
+**/__pycache__/
