@@ -115,4 +115,5 @@ class WFN:
                     return None
 
         # Replace whitespaces
+        attribute = attribute.replace(" ", "_")
         return attribute
