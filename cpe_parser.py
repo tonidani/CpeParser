@@ -24,10 +24,8 @@ def commands(args: List) -> Union[None, str]:
 def print_result(wfn: WFN, uri: str) -> None:
     print("---------------------------------------------")
     print(f"original uri -> {uri}\n")
-    print(f'wfn -> {wfn.parse_value_backslash()}\n')
-    print(wfn.__dict__)
-    print("---------------------------------------------")
-
+    print(wfn.to_dict())
+    print("---------------------------------------------"))
 
 def menu():
     args = sys.argv

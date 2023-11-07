@@ -9,8 +9,8 @@ from utils.enums import (LogicalValuesEnum, UriStandardValuesEnum,
 
 
 # CONSTANS
-DELIMITER = ":"
-SPECIAL_CHARACTERS = "!\"#$%&'()*+,/:;<=>?@[]^`{|}~"
+DELIMITER = r'(?<!\\):'
+SPECIAL_CHARACTERS = """!\"#$%&'()*+,/:;<=>?@[]^`{|}~]"""
 
 
 class WFN:
@@ -34,21 +34,24 @@ class WFN:
 
     def get_attributes(self) -> Dict[str, str]:
         return vars(self).items()
+    
+    def to_dict(self):
+        dict_cpe = '{\n'
+        for attribute, value in self.get_attributes():
+            dict_cpe += f'"{attribute}":"{value}",\n'
+        dict_cpe += '}'
+        return dict_cpe
 
     @classmethod
     def parse(cls, data: str) -> "WFN":
-
-        # Validation function
-        original_uri = data.split(DELIMITER)
-        splitted_uri = data.strip().lower().split(DELIMITER)
-
+        parts = re.split(DELIMITER, data)
         try:
-            assert len(splitted_uri) == 13
+            assert len(parts) == 13
         except:
-            raise IncompleteUriError(len(splitted_uri))
+            raise IncompleteUriError(len(parts))
 
-        standard, standard_v, part = splitted_uri[0], splitted_uri[1], splitted_uri[2]
-        attributes = [attr for attr in splitted_uri[3:]]
+        standard, standard_v, part = parts[0], parts[1], parts[2]
+        attributes = [attr for attr in parts[3:]]
 
         try:
             standard = UriStandardValuesEnum(standard)
@@ -72,41 +75,24 @@ class WFN:
 
             if not validated_attr:
                 raise AttributeValueError(attribute)
-
             validated_attributes_list.append(validated_attr)
 
         return cls(*validated_attributes_list)
 
-    def parse_value_backslash(self) -> str:
+    def parse_uri(self) -> str:
 
         parsed_cpe = f'{UriStandardValuesEnum.CPE.value}:{StandardVersionValuesEnum.NO_VERSION.value}'
-
         for attribute, value in self.get_attributes():
 
             if value in LogicalValuesEnum.allowed_values("name"):
                 # Parse Logical Values (ANY, NA => * and -)
                 final_value_string = getattr(LogicalValuesEnum, value)
-            else:
-                # Define a regular expression pattern to match special characters
-                special_char_pattern = r'\\[?*]'
-
-                # Replace escaped special characters with a placeholder to temporarily preserve them
-                value_string = re.sub(special_char_pattern, r'PLACE', value)
-
-                # Quote all other non-alphanumeric printable characters except for space
-                quoted_value_string = re.sub(r'([^\w\s])', r'\\\1', value)
-
-                # Restore the escaped special characters
-                final_value_string = re.sub(
-                    r'PLACE', lambda match: '\\' + match.group()[1], quoted_value_string)
-
             parsed_cpe += f":{final_value_string}"
 
         return parsed_cpe
 
     @staticmethod
     def validate_pattern(attribute: str) -> Union[str, LogicalValuesEnum, None]:
-
         # Logical Values
         if len(attribute) == 1 and attribute in LogicalValuesEnum.allowed_values():
             try:
@@ -116,15 +102,17 @@ class WFN:
 
             return attribute.name
 
-        special_characters_to_escape = set(SPECIAL_CHARACTERS)
+        special_characters_to_escape = SPECIAL_CHARACTERS
+
+        if len(attribute) == 1 and attribute in SPECIAL_CHARACTERS:
+            return None
 
         # Looking for \ before a special character
         for index in range(len(attribute)-1):
             char = attribute[index]
             if char in special_characters_to_escape:
-                if index - 1 == 0 or attribute[index - 1] != "\\":
+                if index - 1 == 0 or attribute[index - 1] != '\\':
                     return None
 
         # Replace whitespaces
-        attribute = attribute.replace(" ", "_")
         return attribute
