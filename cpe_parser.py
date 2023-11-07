@@ -25,7 +25,7 @@ def print_result(wfn: WFN, uri: str) -> None:
     print("---------------------------------------------")
     print(f"original uri -> {uri}\n")
     print(wfn.to_dict())
-    print("---------------------------------------------"))
+    print("---------------------------------------------")
 
 def menu():
     args = sys.argv
